@@ -19,9 +19,7 @@ var countMsgList = 10;
 var globTargetId = 0;
 var globOrderId = 0;
 var globWayUserId = 0;
-var pblat = 0;
-var pblng = 0;
-var pbaccuracy = 0;
+var nameInterface = "oper";
 
 function toggleFullScreen() {
     if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement) {
@@ -288,11 +286,13 @@ function panToUnit(idUnit, eff = true) {
         offHomeMenu();
         loadOneUnitMsgOper(idUnit);
     } else {
-        hideWay();
+        if (isGlobWay == true) {
+            hideWay();
+        }
     }
     $.post("app/ajax.php", { oper: "unit_coord", value: idUnit }, function(result) {
-        unitCircle.setMap(null);
-        ipathline.setMap(null);
+        unitCircle.removeFrom(map);
+        ipathline.removeFrom(map);
         eval(result);
     } );
 }
@@ -313,35 +313,26 @@ function showWayUnit(idUnit) {
 function showWayGlID() {
     deleteAllTargets();
     deleteAllUnits();
-    unitCircle.setMap(null);
-    ipathline.setMap(null);
+    unitCircle.removeFrom(map);
+    ipathline.removeFrom(map);
     $.post("app/ajax.php", { oper: "show_way", value: globWayUserId }, function(result) {
         eval(result);
         var wayPlanCoordinates = [];
         for (var s in resway) {
             dotdata = resway[s];
-            var waymarker = new google.maps.Marker({
-                position: {lat: Number(dotdata.lat), lng: Number(dotdata.lng)},
-                map: map,
-                icon: {
-                    path: google.maps.SymbolPath.CIRCLE,
-                    scale: 2,
-                    strokeColor: '#0000FF',
-                    strokeWeight: 2
-                },
+            var waymarker = L.marker({lat: Number(dotdata.lat), lng: Number(dotdata.lng)}, {
+                icon: histPoMarker,
                 title: dotdata.time,
-            });
+            }).addTo(map);
             wayUnit.push(waymarker);
             wayPlanCoordinates.push({lat: Number(dotdata.lat), lng: Number(dotdata.lng)});
         }
-        wayPath = new google.maps.Polyline({
-            path: wayPlanCoordinates,
+        wayPath = L.polyline(wayPlanCoordinates, {
             geodesic: true,
-            map: map,
-            strokeColor: '#AA00FF',
-            strokeOpacity: 1.0,
-            strokeWeight: 3
-        });
+            color: '#AA00FF',
+            opacity: 1.0,
+            weight: 3
+        }).addTo(map);;
     } );
 }
 
@@ -349,10 +340,10 @@ function hideWay() {
     isGlobWay = false;
     globWayUserId = 0;
     for (var i = 0; i < wayUnit.length; i++) {
-        wayUnit[i].setMap(null);
+        wayUnit[i].removeFrom(map);
     }
     wayUnit = [];
-    wayPath.setMap(null);
+    wayPath.removeFrom(map);
     addManyUnits();
     addManyTargets();
 }
@@ -428,10 +419,12 @@ function offAllMenu() {
     isTargetList = false;
     $("#idTargetList").hide(1000);
     $("#idOneUnitMsg").hide(1000);
-    unitCircle.setMap(null);
-    ipathline.setMap(null);
+    unitCircle.removeFrom(map);
+    ipathline.removeFrom(map);
     onHomeMenu();
-    hideWay();
+    if (isGlobWay == true) {
+        hideWay();
+    }
 }
 
 function pbAlert(pbMsg, sd = false) {
@@ -440,6 +433,11 @@ function pbAlert(pbMsg, sd = false) {
         soundClick();
     }
     $('#msgAlert').modal('show');
+}
+
+function pbConfirmTarget() {
+    soundClick();
+    $('#msgConfirmTarget').modal('show');
 }
 
 function viewOrderMsgs(idOrder) {
@@ -1009,47 +1007,38 @@ function funcRefresh() {
 }
 
 var timerActiveId = setTimeout(function tickActive() {
-    var glurl = "https://www.googleapis.com/geolocation/v1/geolocate?key="+mapkey;
-    $.post(glurl, function(success) {
-        pblat = success.location.lat;
-        pblng = success.location.lng;
-        pbaccuracy = success.accuracy;
-        var qstr = "sys=i_am_active&lat="+pblat+"&lng="+pblng+"&accu="+pbaccuracy;
-        $.ajax({url: "app/ajax.php",
-            data: qstr,
-            success: function(result){
-                if (isGlobWay == true) {
-                    for (var i = 0; i < wayUnit.length; i++) {
-                        wayUnit[i].setMap(null);
-                    }
-                    wayUnit = [];
-                    wayPath.setMap(null);
-                    showWayGlID();
-                } else {
-                    addManyUnits();
-                    addManyTargets();
-                }
-            }
-        });
-    }).fail(function(err) {
-        pbAlert(locale.error_connecting_to_the_internet);
-    });
+    map.locate({setView: false, maxZoom: 18});
     timerActiveId = setTimeout(tickActive, sysTimeout);
 }, 3000);
 
 $(document).ready(function(){
     $("#map").mousedown(function(event){
         if (event.which == 1) {
-            $(".gm-style").removeClass("js-map-onup");
-            $(".gm-style").addClass("js-map-ondown");
+            $(".leaflet-container").removeClass("js-map-onup");
+            $(".leaflet-container").addClass("js-map-ondown");
+            $(".leaflet-interactive").removeClass("js-map-onup");
+            $(".leaflet-interactive").addClass("js-map-ondown");
         }
     });
     $("#map").mouseup(function(){
-        $(".gm-style").removeClass("js-map-ondown");
-        $(".gm-style").addClass("js-map-onup");
+        $(".leaflet-container").removeClass("js-map-ondown");
+        $(".leaflet-container").addClass("js-map-onup");
+        $(".leaflet-interactive").removeClass("js-map-ondown");
+        $(".leaflet-interactive").addClass("js-map-onup");
     });
     $("#map").mouseover(function(){
-        $(".gm-style").removeClass("js-map-ondown");
-        $(".gm-style").addClass("js-map-onup");
+        $(".leaflet-container").removeClass("js-map-ondown");
+        $(".leaflet-container").addClass("js-map-onup");
+        $(".leaflet-interactive").removeClass("js-map-ondown");
+        $(".leaflet-interactive").addClass("js-map-onup");
+    });
+    $('#msgConfirmTarget').on('hidden.bs.modal', function() {
+        soundClick();
+        gragTargetYes(flChDrTarget);
+        flChDrTarget = false;
+    });
+    $('#msgLocationError').on('hidden.bs.modal', function() {
+        soundClick();
+        map.locate({setView: false, maxZoom: 18});
     });
 });

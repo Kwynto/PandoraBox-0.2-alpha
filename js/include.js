@@ -6,20 +6,14 @@ function include(url) {
 
 function pboper() {
     include("js/bootstrap.js");
-    include("js/pbmapset.js");
-    include("js/pbmap.js");
+    include("js/osmmap.js");
     include("js/oper.js");
-    var gmurl = "https://maps.googleapis.com/maps/api/js?key="+mapkey+"&callback=initMap&libraries=geometry";
-    include(gmurl);
 }
 
 function pbunit() {
     include("js/bootstrap.js");
-    include("js/pbmapset.js");
-    include("js/pbmap.js");
+    include("js/osmmap.js");
     include("js/unit.js");
-    var gmurl = "https://maps.googleapis.com/maps/api/js?key="+mapkey+"&callback=initMap&libraries=geometry";
-    include(gmurl);
 }
 
 function pbauth() {

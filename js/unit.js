@@ -9,9 +9,7 @@ var isPass = false;
 var isMassRadio = false;
 
 var countMsgList = 10;
-var pblat = 0;
-var pblng = 0;
-var pbaccuracy = 0;
+var nameInterface = "unit";
 
 function soundClick() {
     if (isSound) {
@@ -109,7 +107,7 @@ function panToUnit(idUnit, eff = true) {
         loadOneUnitMsgOper(idUnit);
     }
     $.post("app/ajax.php", { oper: "unit_coord", value: idUnit }, function(result) {
-        unitCircle.setMap(null);
+        unitCircle.removeFrom(map);
         eval(result);
     } );
 }
@@ -266,39 +264,33 @@ function sendReportTask(idTask) {
 }
 
 var timerActiveId = setTimeout(function tickActive() {
-    var glurl = "https://www.googleapis.com/geolocation/v1/geolocate?key="+mapkey;
-    $.post(glurl, function(success) {
-        pblat = success.location.lat;
-        pblng = success.location.lng;
-        pbaccuracy = success.accuracy;
-        var qstr = "sys=i_am_active&lat="+pblat+"&lng="+pblng+"&accu="+pbaccuracy;
-        $.ajax({url: "app/ajax.php",
-            data: qstr,
-            success: function(result){
-                $.post("app/ajax.php", { unit: "my_flags" }, function(result2) {
-                    eval(result2);
-                } );
-            }
-        });
-    }).fail(function(err) {
-        pbAlert(locale.error_connecting_to_the_internet);
-    });
+    map.locate({setView: false, maxZoom: 18});
     timerActiveId = setTimeout(tickActive, sysTimeout);
 }, 3000);
 
 $(document).ready(function(){
     $("#map").mousedown(function(event){
         if (event.which == 1) {
-            $(".gm-style").removeClass("js-map-onup");
-            $(".gm-style").addClass("js-map-ondown");
+            $(".leaflet-container").removeClass("js-map-onup");
+            $(".leaflet-container").addClass("js-map-ondown");
+            $(".leaflet-interactive").removeClass("js-map-onup");
+            $(".leaflet-interactive").addClass("js-map-ondown");
         }
     });
     $("#map").mouseup(function(){
-        $(".gm-style").removeClass("js-map-ondown");
-        $(".gm-style").addClass("js-map-onup");
+        $(".leaflet-container").removeClass("js-map-ondown");
+        $(".leaflet-container").addClass("js-map-onup");
+        $(".leaflet-interactive").removeClass("js-map-ondown");
+        $(".leaflet-interactive").addClass("js-map-onup");
     });
     $("#map").mouseover(function(){
-        $(".gm-style").removeClass("js-map-ondown");
-        $(".gm-style").addClass("js-map-onup");
+        $(".leaflet-container").removeClass("js-map-ondown");
+        $(".leaflet-container").addClass("js-map-onup");
+        $(".leaflet-interactive").removeClass("js-map-ondown");
+        $(".leaflet-interactive").addClass("js-map-onup");
+    });
+    $('#msgLocationError').on('hidden.bs.modal', function() {
+        soundClick();
+        map.locate({setView: false, maxZoom: 18});
     });
 });
